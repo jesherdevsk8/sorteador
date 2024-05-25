@@ -2,7 +2,8 @@
 
 require 'pry-byebug'
 require 'json'
-require 'httparty'
+require 'net/http'
+require 'uri'
 
 module Raffle
   class Team
@@ -28,25 +29,25 @@ module Raffle
         @time_preto << nome unless @time_azul.include?(nome)
       end
 
-      times = <<~TIMES
+      teams = <<~TEAMS
         Time Preto: #{@time_preto.join(', ')}
         Time Azul: #{@time_azul.join(', ')}
-      TIMES
-      send_message(times)
+      TEAMS
+      send_message(teams)
     end
 
-    def self.send_message(times)
+    def self.send_message(teams)
       # TODO: Não deixar esses tokens chumbado no código
       api_key = 'colocar api token aqui'
       chat_id = 'colocar chat_id aqui'
-      HTTParty.post("https://api.telegram.org/bot#{api_key}/sendMessage",
-                    headers: {
-                      'Content-Type' => 'application/json'
-                    },
-                    body: {
-                      chat_id: chat_id,
-                      text: times
-                    }.to_json)
+      uri = URI.parse("https://api.telegram.org/bot#{api_key}/sendMessage")
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+
+      request = Net::HTTP::Post.new(uri.path, { 'Content-Type' => 'application/json' })
+      request.body = { chat_id: chat_id, text: teams }.to_json
+
+      http.request(request)
     end
   end
 end
